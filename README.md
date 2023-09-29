@@ -4,4 +4,4 @@ A small collection of simple or casual games. Includes Guess the Number, Flip a 
 
 ## User Manual
 
-- [Please Check Game Collection User Manual.docx](#installation)
+- [Please check the attachment above "Game Collection User Manual.docx"](#installation)
