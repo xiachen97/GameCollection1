@@ -1,0 +1,111 @@
+﻿@page "/Coin Flip"
+@inject ILocalStorageService localStorage
+
+<PageTitle>Flip a Coin </PageTitle>
+
+<div>
+    <button class="btn btn-primary" @onclick="Save">Save States</button>
+    <button class="btn btn-primary" @onclick="Read">Read States</button>
+</div>
+
+<br>
+
+<style>
+    .CoinFlip-container {
+        color: black;
+        text-align: center;
+        border-radius: 15px;
+        padding: 50px;
+    }
+</style>
+
+<div class="CoinFlip-container" style="background-color: @Color;">
+    <h1>💫💫💫Flip a Coin</h1>
+    <p></p>
+    <h3>Total Filps: @TotalCount</h3>
+    <h4>@CountHead Heads    :     @CountTail Tails </h4>
+    <p></p>
+    <p><button @onclick="FlipCoin" disabled="@GameOver"> Flip Coin </button>   <button @onclick="Reset">Reset</button> </p>
+    <p></p>
+
+</div>
+
+<div class="CoinFlip-container">
+    @if (GuessResult == "Coin Head")
+    {
+        <img src="images/coin-head.png" />
+    }
+    @if (GuessResult == "Coin Tail")
+    {
+        <img src="images/coin-tail.png" />
+    }
+    <p></p>
+    <p style="text-align: center" font="bold">@GuessResult</p>
+</div>
+
+
+
+@code {
+    private static int NumCoins { get; set; } = @NumCoins;
+    private string Color = $"hsla(40,80%,40%,1)";//init color is brown
+    private bool GameOver { get; set; }
+    private string GuessResult = "";
+    private int CountHead = 0;
+    private int CountTail = 0;
+    private int TotalCount;
+
+    static Random rand = new Random();
+    private static int GuessCoin = rand.Next(0, 2);//to make num random between 0-1 means rand.Next(0, 2)//head or tail
+
+    private void FlipCoin()
+    {
+
+        if (GuessCoin == 1)
+        {
+            GuessResult = "Coin Head";
+            CountHead++;
+            GameOver = true;
+        }
+        else
+        {
+            GuessResult = "Coin Tail";
+            CountTail++;
+            GameOver = true;
+        }
+        TotalCount = CountHead + CountTail;
+
+    }
+
+    //If you click play again, we need reset some data
+    private void Reset()
+    {
+        GameOver = false;
+        GuessResult = string.Empty;
+        GuessCoin = rand.Next(0, 2);// if you wanna guess same range number again or change range to guess num, we need reset it
+    }
+
+
+
+
+    //////////////////////////////////Note: The code below is about save states/serialization  ---By xia chen//////////////////////////////////////////
+
+    public async Task Save()
+    {
+        await localStorage.SetItemAsync("Heads count", CountHead);
+        await localStorage.SetItemAsync("Tails count", CountTail);
+        await localStorage.SetItemAsync("Total count", TotalCount);
+    }
+
+    private async Task Read()
+    {
+        var localStorageHead = await localStorage.GetItemAsync<int>("Heads count");
+        var localStorageTail = await localStorage.GetItemAsync<int>("Tails count");
+        var localStorageTotal = await localStorage.GetItemAsync<int>("Total count");
+        Console.WriteLine($"Current Heads count = {localStorageHead};" + " " + $"Current Tails count = {localStorageTail};" + " " + $"Current Total count = {localStorageTotal}");
+        CountHead = localStorageHead;
+        CountTail = localStorageTail;
+        TotalCount = localStorageTotal;
+
+
+    }
+}

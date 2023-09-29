@@ -1,0 +1,70 @@
+﻿@page "/"
+@inject IJSRuntime JSRuntime
+@inject ISessionStorageService sessionStorage
+<h2>Welcome to Avengers Game Collection</h2>
+
+@*
+<h3>Below is the test user session storage</h3>
+
+<style>
+    .user-controls {
+        text-align: center;
+        margin-top: 30px;
+    }
+</style>
+
+<p>User Name: <input class="user-controls" @bind="currentInputName" /> </p>
+<p>User Email: <input class="user-controls" @bind="currentInputEmail" /> </p>
+<p></p>
+<button class="btn btn-primary" @onclick="Save">Save</button>    
+<button class="btn btn-primary" @onclick="Read">Read</button>
+<button class="btn btn-primary" @onclick="Delete">Delete</button>
+
+
+@code {
+    string currentInputName="";
+    string currentInputEmail="";
+
+    public async Task Save()
+    {
+       // for LocalStorage; here we don't use localStorage because data is sensitive, only invoke
+        //await JSRuntime.InvokeVoidAsync("localStorage.setItem", "userName", currentInputName);
+        //await JSRuntime.InvokeVoidAsync("localStorage.setItem", "userEmail", currentInputEmail);
+
+
+        // for sessionStorage; we only wanna save one time data
+        await sessionStorage.SetItemAsync("mysessionStorageName", currentInputName);
+        await sessionStorage.SetItemAsync("mysessionStorageEmail", currentInputEmail);
+    }
+
+    public async Task Read()
+    {
+        // for LocalStorage
+        //currentInputName = await JSRuntime.InvokeAsync<string>("localStorage.getItem", "userName");
+        //currentInputEmail = await JSRuntime.InvokeAsync<string>("localStorage.getItem", "userEmail");
+
+        // for sessionStorage
+        var sessionStorageName = await sessionStorage.GetItemAsync<string>("mysessionStorageName");
+        Console.WriteLine($"Current Name = {sessionStorageName}");
+
+        var sessionStorageEmail = await sessionStorage.GetItemAsync<string>("mysessionStorageEmail");
+        Console.WriteLine($"Current Email = {sessionStorageEmail}");
+    }
+
+    public async Task Delete()
+    {
+        // for LocalStorage
+        //await JSRuntime.InvokeAsync<string>("localStorage.removeItem", "userName");
+        //await JSRuntime.InvokeAsync<string>("localStorage.removeItem", "userEmail");
+
+        // for sessionStorage
+        await JSRuntime.InvokeAsync<string>("sessionStorage.removeItem", "mysessionStorageName");
+        await JSRuntime.InvokeAsync<string>("sessionStorage.removeItem", "mysessionStorageEmail");
+
+
+    }
+
+
+}
+
+*@

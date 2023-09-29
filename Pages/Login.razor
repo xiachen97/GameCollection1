@@ -1,0 +1,31 @@
+﻿@page "/login"
+<h3>Login</h3>
+
+<form>
+    <div class="form-group">
+        <label for="email">Email address</label>
+        <input type="email" class="form-control" id="email" placeholder="Enter email" @bind-value="Email">
+    </div>
+    <div class="form-group">
+        <label for="password">Password</label>
+        <input type="password" class="form-control" id="password" placeholder="Password" @bind-value="Password">
+    </div>
+    <button type="button" class="btn btn-primary" @onclick="HandleLogin">Login</button>
+</form>
+
+@if (IsLoginSuccess)
+{
+    <h1>Login Functionality Coming Soon</h1>
+}
+
+@code {
+    private string Email { get; set; }
+    private string Password { get; set; }
+    private bool IsLoginSuccess { get; set; }
+
+    private void HandleLogin()
+    {
+        // Handle login logic here
+        IsLoginSuccess = true;
+    }
+}

@@ -1,0 +1,134 @@
+﻿@page "/Guess Number"
+@inject ILocalStorageService localStorage
+
+<PageTitle>Guess a Number</PageTitle>
+
+
+<div>
+    <button class="btn btn-primary" @onclick="Save">Save States</button>
+    <button class="btn btn-primary" @onclick="Read">Read States</button>
+</div>
+
+<br>
+
+<style>
+    .GuessNumber-container {
+        color: black;
+        text-align: center;
+        border-radius: 15px;
+        padding: 50px;
+    }
+    .GuessNumber-controls {
+        text-align: center;
+        margin-top: 30px;
+    }
+</style>
+
+<div class="GuessNumber-container" style="background-color: @Color;">
+    <h1>🔍🔍🔍Guess a Number</h1>
+    <p>Please guess number between <input @bind="@range1" type="number" class="GuessNumber-controls" /> - <input @bind="@range2" type="number" class="GuessNumber-controls" /> </p>
+    <p>Once you change the range, please click  <button class="btn btn-dark" @onclick="ChangeRange">  Fix Changes  </button> </p>
+</div>
+
+
+
+<div class="GuessNumber-container">
+    <input @bind="GuessAsString" placeholder="Please enter your guess" autofocus="true">
+    <button @onclick="CheckGuess" disabled="@GameOver">Guess</button>
+    <p style="text-align: center">@GuessResult</p>
+</div>
+
+
+@if (GameOver)
+{
+    <div class="GuessNumber-container">
+        <p>Well Done! It took you @_guessAttempts.Count attempts to guess this number</p>
+        <p>This is your previous attempts number: @GuessAttemptsAsString</p>
+        <button @onclick="Reset">Play again</button>
+    </div>
+}
+
+
+@code {
+    private string Color = $"hsla(181,80%,40%,1)";//init color is blue
+    private Random RandomGenerator = new Random();//design a random color of button
+
+    private static int range1 { get; set; } = @range1;
+    private static int range2 { get; set; } = @range2;
+
+    static Random rand = new Random();
+    private static int CorrectGuess = rand.Next(range1, 1 + range2);//to make num random between 1-100 means rand.Next(1, 101)
+
+    private bool GameOver { get; set; }
+    private string GuessAsString { get; set; } = "";
+    private string GuessResult { get; set; } = "";
+    private readonly List<int> _guessAttempts = new();
+    private string GuessAttemptsAsString => string.Join(", ", _guessAttempts);
+
+    private void CheckGuess()
+    {
+        if (string.IsNullOrWhiteSpace(GuessAsString))
+        {
+            GuessResult = "The number you entered is empty!";
+            return;
+        }
+        if (!int.TryParse(GuessAsString, out var guessAsInteger))
+        {
+            GuessResult = $"The number you entered is invalid: {GuessAsString}";
+            return;
+        }
+
+        GuessResult = guessAsInteger switch
+        {
+            _ when guessAsInteger < CorrectGuess => "Too low!🥶",
+            _ when guessAsInteger > CorrectGuess => "Too high!🥵",
+            _ => "Correct!🎉🎉🎉"
+        };//Blazor does not support C# 9.0 syntax here
+
+        _guessAttempts.Add(guessAsInteger);
+
+        if (GuessResult.Contains("Correct", StringComparison.OrdinalIgnoreCase))
+        {
+            GameOver = true;
+        }
+    }
+    private void ChangeRange()
+    {
+        int col = RandomGenerator.Next(0, 361);//we can get random color for background 0-361
+        Color = $"hsla({col},100%,40%,0.8)";//https://hslpicker.com/
+        Reset();//call reset method
+
+    }
+
+
+    //If you click play again, we need reset some data
+    private void Reset()
+    {
+        GameOver = false;
+        GuessResult = string.Empty;
+        GuessAsString = string.Empty;
+        _guessAttempts.Clear();    
+        CorrectGuess = rand.Next(range1, 1 + range2);// if you wanna guess same range number again or change range to guess num, we need reset it
+    }
+
+
+
+    //////////////////////////////////Note: The code below is about save states/serialization  ---By xia chen//////////////////////////////////////////
+
+    public async Task Save()
+    {
+        await localStorage.SetItemAsync("Min Range", range1);
+        await localStorage.SetItemAsync("Max Range", range2);
+    }
+
+    private async Task Read()
+    {
+        var localStorageMax = await localStorage.GetItemAsync<int>("Max Range");
+        var localStorageMin = await localStorage.GetItemAsync<int>("Min Range");
+        Console.WriteLine($"Current MaxRange = {localStorageMax};" + " " + $"Current MinRange = {localStorageMin}");
+        //auto fill the last states
+        range1 = localStorageMin;
+        range2 = localStorageMax;
+
+    }
+}

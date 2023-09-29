@@ -1,0 +1,264 @@
+﻿@page "/checkers"
+<div class="container">
+    <h1>Checkers</h1>
+
+    <div class="board">
+        @foreach (var row in Rows)
+        {
+            <div class="row">
+                @foreach (var square in row)
+                {
+                    <div class="square @(square.Color) @(square.IsSelected ? "selected" : "") @(square.IsAvailable ? "available" : "")" @onclick="() => HandleClick(square)">
+                        @if (square.Piece != null)
+                        {
+                            <div class="piece @(square.Piece.Color) @(square.Piece.IsKing ? "king" : "")"></div>
+                        }
+                    </div>
+                }
+            </div>
+        }
+    </div>
+</div>
+@code {
+    private Square[][] Rows { get; set; }
+
+    private Square SelectedSquare { get; set; }
+
+    private void InitializeBoard()
+    {
+        // Code to initialize the board with squares and pieces goes here
+    }
+
+    private void HandleClick(Square square)
+    {
+        Console.WriteLine("HandleClick called");
+
+        if (SelectedSquare == null)
+        {
+            // Select a piece
+            if (square.Piece != null && square.Piece.Color == PlayerColor)
+            {
+                SelectedSquare = square;
+                SelectedSquare.IsSelected = true;
+
+                // Check available moves for the selected piece
+                foreach (var row in Rows)
+                {
+                    foreach (var s in row)
+                    {
+                        if (IsMoveValid(SelectedSquare, s))
+                        {
+                            s.IsAvailable = true;
+                        }
+                    }
+                }
+            }
+        }
+        else
+        {
+            // Deselect the previously selected square
+            if (SelectedSquare == square)
+            {
+                SelectedSquare.IsSelected = false;
+                SelectedSquare = null;
+
+                // Remove available class from all squares
+                foreach (var row in Rows)
+                {
+                    foreach (var s in row)
+                    {
+                        s.IsAvailable = false;
+                    }
+                }
+
+                return;
+            }
+
+            // Move the selected piece to the clicked square
+            if (IsMoveValid(SelectedSquare, square))
+            {
+                // Move the piece
+                square.Piece = SelectedSquare.Piece;
+                SelectedSquare.Piece = null;
+
+                // Check if the moved piece should be kinged
+                if (square.Row == 0 && square.Piece.Color == "black")
+                {
+                    square.Piece.IsKing = true;
+                }
+                else if (square.Row == 7 && square.Piece.Color == "red")
+                {
+                    square.Piece.IsKing = true;
+                }
+
+                // Check if the move is a capture
+                if (Math.Abs(square.Row - SelectedSquare.Row) == 2)
+                {
+                    // Calculate the row and column of the captured piece
+                    int captureRow = (square.Row + SelectedSquare.Row) / 2;
+                    int captureCol = (square.Column + SelectedSquare.Column) / 2;
+
+                    // Remove the captured piece
+                    Rows[captureRow][captureCol].Piece = null;
+                }
+
+                // Update the Rows property
+                Rows[square.Row][square.Column].Piece = square.Piece;
+                Rows[SelectedSquare.Row][SelectedSquare.Column].Piece = null;
+                SelectedSquare.IsSelected = false;
+
+                // Clear the selected square
+                SelectedSquare = null;
+
+                // Switch players
+                PlayerColor = PlayerColor == "red" ? "black" : "red";
+
+                // Remove available class from all squares
+                foreach (var row in Rows)
+                {
+                    foreach (var s in row)
+                    {
+                        s.IsAvailable = false;
+                    }
+                }
+
+                // Update the selected square's class
+                square.IsSelected = true;
+
+                StateHasChanged();
+            }
+            else
+            {
+                // Deselect the piece
+                SelectedSquare.IsSelected = false;
+                SelectedSquare = null;
+
+                // Remove available class from all squares
+                foreach (var row in Rows)
+                {
+                    foreach (var s in row)
+                    {
+                        s.IsAvailable = false;
+                    }
+                }
+            }
+        }
+    }
+
+    private bool IsMoveValid(Square from, Square to)
+    {
+        // Check if the destination square is empty
+        if (to.Piece != null)
+        {
+            return false;
+        }
+
+        // Check if the move is diagonal
+        int rowDiff = Math.Abs(to.Row - from.Row);
+        int colDiff = Math.Abs(to.Column - from.Column);
+        if (rowDiff != colDiff)
+        {
+            return false;
+        }
+
+        // Check if the move is only one square or two squares (for capture)
+        if (rowDiff != 1 && rowDiff != 2)
+        {
+            return false;
+        }
+
+        // Check if the piece is moving in the correct direction
+        if (from.Piece.Color == "red" && to.Row > from.Row)
+        {
+            return false;
+        }
+        else if (from.Piece.Color == "black" && to.Row < from.Row)
+        {
+            return false;
+        }
+
+        // Check if the move is a capture
+        if (rowDiff == 2)
+        {
+            int captureRow = (from.Row + to.Row) / 2;
+            int captureCol = (from.Column + to.Column) / 2;
+            Square captureSquare = Rows[captureRow][captureCol];
+            if (captureSquare.Piece == null || captureSquare.Piece.Color == from.Piece.Color)
+            {
+                return false;
+            }
+
+            // Capture the piece
+            captureSquare.Piece = null;
+
+            // Move is valid
+            return true;
+        }
+
+        // Move is valid
+        return true;
+    }
+
+    private class Square
+    {
+        public int Row { get; set; }
+        public int Column { get; set; }
+        public Piece Piece { get; set; }
+        public string Color { get; set; }
+        public bool IsSelected { get; set; }
+        public bool IsAvailable { get; set; }
+        public string ElementClass { get; set; }
+    }
+
+
+    private class Piece
+    {
+        public bool IsKing { get; set; }
+        public string Color { get; set; }
+    }
+
+    private string PlayerColor = "red";
+
+    protected override void OnInitialized(){
+        Rows = new Square[8][];
+        for (int i = 0; i < 8; i++)
+        {
+            Rows[i] = new Square[8];
+            for (int j = 0; j < 8; j++)
+            {
+                Rows[i][j] = new Square { Row = i, Column = j, Color = (i + j) % 2 == 0 ? "light" : "dark" };
+                if (i < 3 && (i + j) % 2 == 1)
+                {
+                    Rows[i][j].Piece = new Piece { Color = "black" };
+                }
+                else if (i > 4 && (i + j) % 2 == 1)
+                {
+                    Rows[i][j].Piece = new Piece { Color = "red" };
+                }
+            }
+        }
+    }
+    private void SetAvailableSquares()
+    {
+        foreach (var row in Rows)
+        {
+            foreach (var square in row)
+            {
+                square.IsAvailable = false;
+
+                if (SelectedSquare != null && IsMoveValid(SelectedSquare, square))
+                {
+                    square.IsAvailable = true;
+                    // Add the "available" class to the HTML element
+                    square.ElementClass = "square available";
+                }
+                else
+                {
+                    // Remove the "available" class from the HTML element
+                    square.ElementClass = "square";
+                }
+            }
+        }
+    }
+}
+

@@ -1,0 +1,462 @@
+@page "/sudoku"
+
+
+
+<div @onkeydown="@OnClick" tabindex="0">
+	<h3>Sudoku</h3>
+	</div>
+
+
+	<div class="row">
+
+
+		<div class="sudoku">
+
+
+
+			@foreach (int c in new[] { 0, 1, 2, 3, 4, 5, 6, 7, 8, })
+			{
+				<div class="Sudoku-Tile">
+					@foreach (int v in new[] { 0, 1, 2, 3, 4, 5, 6, 7, 8, })
+					{
+						
+						int square_c = c - c % 3 + v / 3;
+						int square_v = (c % 3) * 3 + v % 3;
+
+						Tile Tile = Square[square_c, square_v];
+						<button class="sudoku-Tile @Tile.Selected @Tile.Current " @onclick="() => { ClickCell(square_c, square_v); StateHasChanged(); }">@Tile.Value</button>
+					}
+
+
+				</div>
+
+
+
+			}
+		</div>
+
+
+	</div>
+	<br />
+	
+	<h4>Controls</h4>
+
+
+
+	<div class="row controls">
+		<button class="sudoku-Click" @onclick="() => { Move(null, () => StateHasChanged()); StateHasChanged(); }">X</button>
+		@foreach (int c in new[] { 1, 2, 3, 4, 5, 6, 7, 8, 9, })
+		{
+			<button class="sudoku-Click" @onclick="() => { Move(c, () => StateHasChanged()); StateHasChanged(); }">@c</button>
+		}
+	</div>
+
+
+	<div class="row controls">
+		<button class="btn" @onclick="() => { NewPuzzleGen(); StateHasChanged(); }">New Game</button>
+	</div>
+
+<style>
+
+		.controls {
+			margin-top: 1rem;
+			}
+
+		.controls button {
+			margin-right: .5rem;
+			margin-bottom: .5rem;
+		}
+
+	button.sudoku-value {
+		background-color: #f9f9f9;
+		font-size: 1rem;
+		text-align: center;
+		width: 2rem;
+		height: 2rem;
+		outline: none !important;
+		border-style: solid;
+	}
+
+	.sudoku {
+		display: grid;
+		grid-template-columns: auto auto auto;
+		background-color: #333;
+		width: auto;
+		height: auto;
+		column-gap: .5rem;
+		row-gap: .5rem;
+		padding: .5rem;
+		float: left;
+	}
+
+	.Sudoku-Tile {
+		display: grid;
+		grid-template-columns: auto auto auto;
+		background-color: #333;
+		width: auto;
+		height: auto;
+		column-gap: .25rem;
+		row-gap: .25rem;
+	}
+
+
+	.sudoku-Tile {
+		background-color: #f9f9f9;
+		font-size: 1rem;
+		text-align: center;
+		width: 2rem;
+		height: 2rem;
+		outline: none !important;
+		border: none;
+	}
+
+
+	.Current {
+		background-color: darkcyan;
+	}
+
+
+	.Selected {
+		background-color: #ccc;
+	}
+
+
+
+</style>
+
+
+@code
+{
+	Tile[,] _square;
+	Tile[,] Square => _square ?? (_square = PuzzleGen());
+
+	Tile ClickedTile;
+
+	
+
+	class Tile
+	{
+		public string Selected;
+		public string Current;
+		
+		public int c;
+		public int v;
+
+		public int? Value;
+
+		
+		
+	}
+
+
+
+	
+
+
+	void NewPuzzleGen()
+	{
+		_square = PuzzleGen();
+
+
+
+		if (ClickedTile != null)
+		{
+			ClickedTile.Current = "";
+			ClickedTile = null;
+		}
+
+
+		
+		StateHasChanged();
+	}
+
+	void ClickCell(int c, int v)
+	{
+		Tile[,] b = Square;
+		if (string.IsNullOrEmpty(Square[c, v].Selected))
+		{
+			if (ClickedTile != null)
+			{
+				ClickedTile.Current = string.Empty;
+			}
+
+
+			ClickedTile = Square[c, v];
+			ClickedTile.Current = "selected";
+		}
+
+		StateHasChanged();
+	}
+
+
+	Tile[,] PuzzleGen(Random rand = null,int? empty = null)
+	{
+		rand ??= new Random();
+		if (empty.HasValue && empty < 0 || 81 < empty)
+		{
+			throw new ArgumentOutOfRangeException(nameof(empty), empty.Value, $"{nameof(empty)} < 0 || 81 < {nameof(empty)}");
+		}
+		else if (!empty.HasValue)
+		{
+			empty = rand.Next(0, 82);
+		}
+
+
+
+
+		int?[,] Square = new int?[9, 9];
+
+
+		(int[] Values, int Count)[,] PassCheck = new (int[] Values, int Count)[9, 9];
+		for (int c = 0; c < 9; c++)
+		{
+			for (int v = 0; v < 9; v++)
+			{
+				PassCheck[c, v] = (new int[9], -1);
+			}
+		}
+
+		#region CheckTile
+
+
+
+
+
+		void CheckTile(int row, int column)
+		{
+			bool SquareValid(int value, int row, int column)
+			{
+				for (int c = row - row % 3; c <= row; c++)
+				{
+					for (int v = column - column % 3; v <= column - column % 3 + 2 && !(c == row && v == column); v++)
+					{
+						if (Square[c, v] == value)
+						{
+							return false;
+						}
+					}
+				}
+				return true;
+			}
+
+
+
+
+
+
+
+			bool RowCheck(int value, int row, int column)
+			{
+				for (int c = 0; c < column; c++)
+				{
+					if (Square[row, c] == value)
+					{
+						return false;
+					}
+				}
+				return true;
+			}
+
+
+
+
+
+
+
+
+			bool ColumnCheck(int value, int row, int column)
+			{
+				for (int c = 0; c < row; c++)
+				{
+					if (Square[c, column] == value)
+					{
+						return false;
+					}
+				}
+				return true;
+			}
+
+
+
+
+
+
+
+			PassCheck[row, column].Count = 0;
+			for (int c = 1; c <= 9; c++)
+			{
+				if (SquareValid(c, row, column) && RowCheck(c, row, column) && ColumnCheck(c, row, column))
+				{
+					PassCheck[row, column].Values[PassCheck[row, column].Count++] = c;
+				}
+			}
+
+		}
+
+
+
+		#endregion
+
+
+		for (int c = 0; c < 9; c++)
+		{
+			for (int v = 0; v < 9; v++)
+			{
+				CheckTile(c, v);
+
+
+
+				while (PassCheck[c, v].Count == 0)
+				{
+					Square[c, v] = null;
+					c = v == 0 ? c - 1 : c;
+					v = v == 0 ? 8 : v - 1;
+				}
+
+
+
+
+
+				int index = rand.Next(0, PassCheck[c, v].Count);
+				int value = PassCheck[c, v].Values[index];
+
+				PassCheck[c, v].Values[index] = PassCheck[c, v].Values[PassCheck[c, v].Count - 1];
+				PassCheck[c, v].Count--;
+
+				Square[c, v] = value;
+
+
+
+			}
+		}
+
+
+
+		for (int c = 0; c < 81; c++)
+		{
+			Random rnd = new Random();
+			int row = c / 9;
+			int column = rnd.Next(10) % 9;
+			Square[row, column] = null;
+		}
+
+
+
+
+		Tile[,] TileSet = new Tile[Square.GetLength(0), Square.GetLength(1)];
+		for (int c = 0; c < Square.GetLength(0); c++)
+		{
+			for (int v = 0; v < Square.GetLength(1); v++)
+			{
+				TileSet[c, v] = new Tile()
+				{
+					c = c,
+					v = v,
+					Value = Square[c, v],
+					Selected = Square[c, v].HasValue ? "Selected" : default,
+				};
+			}
+
+
+		}
+
+		return TileSet;
+	}
+
+	void OnClick(KeyboardEventArgs e)
+	{
+		switch (e.Key)
+		{
+			case "1": Move(1, () => StateHasChanged()); StateHasChanged(); break;
+			case "2": Move(2, () => StateHasChanged()); StateHasChanged(); break;
+			case "3": Move(3, () => StateHasChanged()); StateHasChanged(); break;
+			case "4": Move(4, () => StateHasChanged()); StateHasChanged(); break;
+			case "5": Move(5, () => StateHasChanged()); StateHasChanged(); break;
+			case "6": Move(6, () => StateHasChanged()); StateHasChanged(); break;
+			case "7": Move(7, () => StateHasChanged()); StateHasChanged(); break;
+			case "8": Move(8, () => StateHasChanged()); StateHasChanged(); break;
+			case "9": Move(9, () => StateHasChanged()); StateHasChanged(); break;
+			default: return;
+		}
+	}
+
+	void Move(int? value, Action refresh)
+	{
+		
+
+		if (ClickedTile is null)
+		{
+			return;
+		}
+
+
+
+		if (!value.HasValue)
+		{
+			if (string.IsNullOrEmpty(ClickedTile.Selected))
+			{
+				ClickedTile.Value = null;
+			}
+			
+			return;
+		}
+
+
+
+		int x = ClickedTile.c;
+		int y = ClickedTile.v;
+
+		
+		for (int c = x - x % 3; c <= x - x % 3 + 2; c++)
+		{
+
+
+			for (int v = y - y % 3; v <= y - y % 3 + 2; v++)
+			{
+
+
+				if (Square[c, v].Value == value)
+				{
+					
+					return;
+				}
+
+
+			}
+
+
+		}
+
+
+
+		
+		for (int c = 0; c < 9; c++)
+		{
+			if (Square[x, c].Value == value)
+			{
+				
+				return;
+			}
+		}
+
+
+
+
+		
+		for (int c = 0; c < 9; c++)
+		{
+			if (Square[c, y].Value == value)
+			{
+				
+				return;
+			}
+		}
+
+
+
+		ClickedTile.Value = value;
+		
+	}
+
+	
+}
